@@ -1,0 +1,112 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '4.0.3'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'jacoco'
+    id 'org.sonarqube' version '7.0.1.6134'
+}
+
+group = 'com.skyball'
+version = '0.0.1-SNAPSHOT'
+description = 'skyball-volley'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // --- Web / API ---
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    // --- Security / Auth ---
+    implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-resource-server'
+
+    // --- Data ---
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    runtimeOnly 'org.postgresql:postgresql'
+
+    // --- Flyway ---
+    implementation 'org.springframework.boot:spring-boot-starter-flyway'
+    runtimeOnly 'org.flywaydb:flyway-database-postgresql'
+
+    // --- Validation ---
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // --- Mail ---
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+    // --- Actuator ---
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // --- Rate limiting ---
+    implementation 'com.bucket4j:bucket4j-core:8.10.1'
+    implementation 'com.github.ben-manes.caffeine:caffeine'
+
+    // --- Swagger / OpenAPI ---
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5'
+
+    // --- Dev ---
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
+
+    // --- Lombok ---
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // --- Config metadata ---
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+    // --- Tests ---
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    testImplementation 'org.testcontainers:testcontainers-postgresql'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+sonarqube {
+    properties {
+        property 'sonar.projectKey', 'skyball-volley'
+        property 'sonar.projectName', 'skyball-volley'
+        property 'sonar.host.url', 'http://host.docker.internal:9000'
+        property 'sonar.coverage.jacoco.xmlReportPaths', 'build/reports/jacoco/test/jacocoTestReport.xml'
+        property 'sonar.coverage.exclusions', '**/SkyballVolleyApplication.java,**/domain/**,**/dto/**,**/exception/**,**/config/**,**/filter/**'
+    }
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
+    }
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                '**/SkyballVolleyApplication.class',
+                '**/domain/**',
+                '**/dto/**',
+                '**/exception/**',
+                '**/config/**',
+                '**/filter/**'
+            ])
+        }))
+    }
+}
